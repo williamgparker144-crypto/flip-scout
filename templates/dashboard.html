@@ -235,10 +235,27 @@
 
   <!-- Scout Panel -->
   <div class="scout-panel">
-    <button id="btn-scout" onclick="startScout()">▶ SCOUT NOW</button>
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:220px;">
+      <!-- All cities -->
+      <button id="btn-scout-all" onclick="startScout(null)"
+        style="background:var(--green);color:#000;border:none;border-radius:6px;padding:12px 20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;">
+        ▶ SCOUT ALL CITIES
+      </button>
+      <!-- Single city -->
+      <div style="display:flex;gap:8px;">
+        <select id="city-select"
+          style="flex:1;background:#060a10;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:4px;font-family:inherit;font-size:12px;outline:none;">
+          <option value="">— pick a city —</option>
+        </select>
+        <button id="btn-scout-one" onclick="startScoutOne()"
+          style="background:#1a3a5c;color:var(--blue);border:1px solid #1e4a6e;border-radius:6px;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          ▶ SCOUT THIS
+        </button>
+      </div>
+    </div>
     <div class="scout-info">
-      <div class="scout-status" id="scout-status">Ready — press Scout Now to pull fresh leads.</div>
-      <div class="scout-meta" id="scout-meta">RentCast cached ZIPs will be used first. New ZIPs cost 1 API call each.</div>
+      <div class="scout-status" id="scout-status">Ready — choose a city or scout all.</div>
+      <div class="scout-meta" id="scout-meta">Cached ZIPs cost 0 API calls. New ZIPs cost 1 each.</div>
     </div>
     <button onclick="toggleLog()" style="background:none;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;">
       Toggle Log
@@ -379,21 +396,47 @@
   // ── Scout ──────────────────────────────────────────────────────────────
   let polling = null;
 
-  async function startScout() {
-    const btn = document.getElementById('btn-scout');
-    btn.disabled = true;
+  function _disableScoutBtns() {
+    document.getElementById('btn-scout-all').disabled = true;
+    document.getElementById('btn-scout-one').disabled = true;
+    document.getElementById('btn-scout-all').style.background = 'var(--muted)';
+  }
+  function _enableScoutBtns() {
+    document.getElementById('btn-scout-all').disabled = false;
+    document.getElementById('btn-scout-one').disabled = false;
+    document.getElementById('btn-scout-all').style.background = 'var(--green)';
+  }
+
+  async function startScout(cityZip) {
+    _disableScoutBtns();
     document.getElementById('scout-status').className = 'scout-status running';
-    document.getElementById('scout-status').innerHTML = '<span class="spinner"></span>Scouting...';
+    document.getElementById('scout-status').innerHTML = '<span class="spinner"></span>'
+      + (cityZip ? `Scouting ZIP ${cityZip}...` : 'Scouting all cities...');
     document.getElementById('log-panel').classList.add('visible');
     document.getElementById('log-output').textContent = '';
 
-    const r = await fetch('/scout', {method:'POST'}).then(x => x.json());
+    const body = cityZip ? JSON.stringify({zip: cityZip}) : '{}';
+    const r = await fetch('/scout', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body,
+    }).then(x => x.json());
+
     if (!r.ok) {
       document.getElementById('scout-status').textContent = r.msg;
-      btn.disabled = false;
+      _enableScoutBtns();
       return;
     }
     polling = setInterval(pollStatus, 1200);
+  }
+
+  function startScoutOne() {
+    const zip = document.getElementById('city-select').value;
+    if (!zip) {
+      document.getElementById('scout-status').textContent = 'Pick a city from the dropdown first.';
+      return;
+    }
+    startScout(zip);
   }
 
   async function pollStatus() {
@@ -413,8 +456,7 @@
     if (!s.running) {
       clearInterval(polling);
       polling = null;
-      const btn = document.getElementById('btn-scout');
-      btn.disabled = false;
+      _enableScoutBtns();
 
       const statusEl = document.getElementById('scout-status');
       if (s.exit_code === 0) {
@@ -446,6 +488,13 @@
 
   function renderCities(cities) {
     document.getElementById('city-count').textContent = cities.length + ' cities';
+    // Populate scout dropdown
+    const sel = document.getElementById('city-select');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— pick a city —</option>'
+      + cities.map(c => `<option value="${c.zip}">${c.city}, ${c.state} (${c.zip})</option>`).join('');
+    if (prev) sel.value = prev;
+    // Render tags
     document.getElementById('city-tags').innerHTML = cities.map(c => `
       <div style="display:inline-flex;align-items:center;gap:8px;background:#0f1d2e;border:1px solid var(--border);border-radius:6px;padding:6px 12px;">
         <span style="color:var(--text);font-weight:600;">${c.city}</span>

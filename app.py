@@ -56,7 +56,7 @@ _state = {
 }
 
 
-def _run_scout():
+def _run_scout(city_zip=None):
     with _lock:
         _state["running"]   = True
         _state["log"]       = []
@@ -65,8 +65,11 @@ def _run_scout():
         _state["exit_code"] = None
 
     try:
+        cmd = [sys.executable, "main.py", "--hot-only"]
+        if city_zip:
+            cmd += ["--city-zip", city_zip]
         proc = subprocess.Popen(
-            [sys.executable, "main.py", "--hot-only"],
+            cmd,
             cwd=str(BASE_DIR),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -95,8 +98,9 @@ def index():
 def scout():
     if _state["running"]:
         return jsonify({"ok": False, "msg": "Scout already running"}), 409
-    threading.Thread(target=_run_scout, daemon=True).start()
-    return jsonify({"ok": True})
+    city_zip = (request.get_json() or {}).get("zip")
+    threading.Thread(target=_run_scout, kwargs={"city_zip": city_zip}, daemon=True).start()
+    return jsonify({"ok": True, "mode": "single" if city_zip else "all"})
 
 
 @app.route("/status")
