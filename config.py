@@ -24,17 +24,33 @@ RAPIDAPI_KEY         = os.getenv("RAPIDAPI_KEY", "")
 DISCORD_WEBHOOK_URL  = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 # ============================================================
-# SEARCH TARGETS — EDIT THESE
+# SEARCH TARGETS
+# Managed via dashboard — stored in data/cities.json.
+# Falls back to defaults below if the file doesn't exist yet.
 # ============================================================
-TARGET_STATES = ["NC"]                       # State codes
-TARGET_CITIES = [                             # City + State pairs
-    {"city": "Whiteville",  "state": "NC", "zip": "28472"},
-    {"city": "Lumberton",   "state": "NC", "zip": "28358"},
-    {"city": "Fayetteville","state": "NC", "zip": "28301"},
-    {"city": "Wilmington",  "state": "NC", "zip": "28401"},
-    {"city": "Jacksonville","state": "NC", "zip": "28540"},
-    {"city": "Raleigh",     "state": "NC", "zip": "27601"},
+import json as _json
+
+TARGET_STATES = ["NC"]
+
+_CITIES_FILE = DATA_DIR / "cities.json"
+_DEFAULT_CITIES = [
+    {"city": "Whiteville",   "state": "NC", "zip": "28472"},
+    {"city": "Lumberton",    "state": "NC", "zip": "28358"},
+    {"city": "Fayetteville", "state": "NC", "zip": "28301"},
+    {"city": "Wilmington",   "state": "NC", "zip": "28401"},
+    {"city": "Jacksonville", "state": "NC", "zip": "28540"},
+    {"city": "Raleigh",      "state": "NC", "zip": "27601"},
 ]
+
+def _load_cities():
+    try:
+        if _CITIES_FILE.exists():
+            return _json.loads(_CITIES_FILE.read_text())
+    except Exception:
+        pass
+    return _DEFAULT_CITIES
+
+TARGET_CITIES = _load_cities()
 
 # ============================================================
 # DEAL FILTERS — what qualifies as "cheap"

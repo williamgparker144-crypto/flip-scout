@@ -10,15 +10,38 @@ Deploy:       gunicorn app:app --bind 0.0.0.0:$PORT
 """
 import os
 import sys
+import json
 import threading
 import subprocess
 import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR   = Path(__file__).parent
+CITIES_FILE = BASE_DIR / "data" / "cities.json"
+
+_DEFAULT_CITIES = [
+    {"city": "Whiteville",   "state": "NC", "zip": "28472"},
+    {"city": "Lumberton",    "state": "NC", "zip": "28358"},
+    {"city": "Fayetteville", "state": "NC", "zip": "28301"},
+    {"city": "Wilmington",   "state": "NC", "zip": "28401"},
+    {"city": "Jacksonville", "state": "NC", "zip": "28540"},
+    {"city": "Raleigh",      "state": "NC", "zip": "27601"},
+]
+
+def _read_cities():
+    try:
+        if CITIES_FILE.exists():
+            return json.loads(CITIES_FILE.read_text())
+    except Exception:
+        pass
+    return list(_DEFAULT_CITIES)
+
+def _write_cities(cities):
+    CITIES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CITIES_FILE.write_text(json.dumps(cities, indent=2))
 
 app = Flask(__name__)
 
@@ -112,6 +135,38 @@ def leads():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/cities", methods=["GET"])
+def get_cities():
+    return jsonify(_read_cities())
+
+@app.route("/cities", methods=["POST"])
+def add_city():
+    data = request.get_json()
+    city  = (data.get("city")  or "").strip().title()
+    state = (data.get("state") or "").strip().upper()
+    zip_  = (data.get("zip")   or "").strip()
+    if not city or not state or not zip_:
+        return jsonify({"ok": False, "msg": "city, state, and zip are required"}), 400
+    if len(zip_) != 5 or not zip_.isdigit():
+        return jsonify({"ok": False, "msg": "ZIP must be 5 digits"}), 400
+    cities = _read_cities()
+    if any(c["zip"] == zip_ for c in cities):
+        return jsonify({"ok": False, "msg": f"{city} ({zip_}) is already in the list"}), 409
+    cities.append({"city": city, "state": state, "zip": zip_})
+    _write_cities(cities)
+    return jsonify({"ok": True, "cities": cities})
+
+@app.route("/cities/<zip_code>", methods=["DELETE"])
+def remove_city(zip_code):
+    cities = _read_cities()
+    updated = [c for c in cities if c["zip"] != zip_code]
+    if len(updated) == len(cities):
+        return jsonify({"ok": False, "msg": "ZIP not found"}), 404
+    if not updated:
+        return jsonify({"ok": False, "msg": "Must keep at least one city"}), 400
+    _write_cities(updated)
+    return jsonify({"ok": True, "cities": updated})
 
 @app.route("/stats")
 def stats():

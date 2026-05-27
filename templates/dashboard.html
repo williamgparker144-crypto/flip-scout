@@ -250,6 +250,41 @@
     <div id="log-output"></div>
   </div>
 
+  <!-- City Manager -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:24px;">
+    <div class="section-header" style="margin-bottom:16px;">
+      <div class="section-title">Scout Cities</div>
+      <div class="badge" id="city-count">—</div>
+    </div>
+
+    <!-- City tags -->
+    <div id="city-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;min-height:36px;"></div>
+
+    <!-- Add city form -->
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+      <div>
+        <div style="color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">City</div>
+        <input id="inp-city" type="text" placeholder="Fayetteville"
+          style="background:#060a10;border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;font-family:inherit;font-size:12px;width:160px;outline:none;">
+      </div>
+      <div>
+        <div style="color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">State</div>
+        <input id="inp-state" type="text" placeholder="NC" maxlength="2"
+          style="background:#060a10;border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;font-family:inherit;font-size:12px;width:60px;outline:none;text-transform:uppercase;">
+      </div>
+      <div>
+        <div style="color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">ZIP Code</div>
+        <input id="inp-zip" type="text" placeholder="28301" maxlength="5"
+          style="background:#060a10;border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:4px;font-family:inherit;font-size:12px;width:90px;outline:none;">
+      </div>
+      <button onclick="addCity()"
+        style="background:var(--green-dim);color:var(--green);border:1px solid var(--green-dim);padding:8px 20px;border-radius:4px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;">
+        + ADD
+      </button>
+      <div id="city-msg" style="color:var(--red);font-size:11px;align-self:center;"></div>
+    </div>
+  </div>
+
   <!-- Leads Table -->
   <div class="section-header">
     <div class="section-title">Hot Leads</div>
@@ -403,9 +438,65 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // ── Cities ─────────────────────────────────────────────────────────────
+  async function loadCities() {
+    const cities = await fetch('/cities').then(x => x.json());
+    renderCities(cities);
+  }
+
+  function renderCities(cities) {
+    document.getElementById('city-count').textContent = cities.length + ' cities';
+    document.getElementById('city-tags').innerHTML = cities.map(c => `
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#0f1d2e;border:1px solid var(--border);border-radius:6px;padding:6px 12px;">
+        <span style="color:var(--text);font-weight:600;">${c.city}</span>
+        <span style="color:var(--text-dim);font-size:11px;">${c.state} ${c.zip}</span>
+        <button onclick="removeCity('${c.zip}')"
+          style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;line-height:1;"
+          title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  async function addCity() {
+    const city  = document.getElementById('inp-city').value.trim();
+    const state = document.getElementById('inp-state').value.trim().toUpperCase();
+    const zip   = document.getElementById('inp-zip').value.trim();
+    const msg   = document.getElementById('city-msg');
+    msg.textContent = '';
+
+    if (!city || !state || !zip) { msg.textContent = 'All three fields required.'; return; }
+
+    const r = await fetch('/cities', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({city, state, zip}),
+    }).then(x => x.json());
+
+    if (!r.ok) { msg.textContent = r.msg; return; }
+
+    document.getElementById('inp-city').value  = '';
+    document.getElementById('inp-state').value = '';
+    document.getElementById('inp-zip').value   = '';
+    renderCities(r.cities);
+  }
+
+  async function removeCity(zip) {
+    const r = await fetch(`/cities/${zip}`, {method:'DELETE'}).then(x => x.json());
+    if (!r.ok) { document.getElementById('city-msg').textContent = r.msg; return; }
+    renderCities(r.cities);
+  }
+
+  // Enter key on zip fires add
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('inp-zip').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addCity();
+    });
+  });
+
   // ── Init ───────────────────────────────────────────────────────────────
   loadStats();
   loadLeads();
+  loadCities();
 </script>
 </body>
 </html>
