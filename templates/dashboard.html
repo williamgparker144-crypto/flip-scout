@@ -415,7 +415,7 @@
     document.getElementById('log-panel').classList.add('visible');
     document.getElementById('log-output').textContent = '';
 
-    const body = cityZip ? JSON.stringify({zip: cityZip}) : '{}';
+    const body = JSON.stringify(cityZip ? {city: cityZip} : {});
     const r = await fetch('/scout', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
@@ -431,12 +431,12 @@
   }
 
   function startScoutOne() {
-    const zip = document.getElementById('city-select').value;
-    if (!zip) {
+    const city = document.getElementById('city-select').value;
+    if (!city) {
       document.getElementById('scout-status').textContent = 'Pick a city from the dropdown first.';
       return;
     }
-    startScout(zip);
+    startScout(city);
   }
 
   async function pollStatus() {
@@ -492,7 +492,7 @@
     const sel = document.getElementById('city-select');
     const prev = sel.value;
     sel.innerHTML = '<option value="">— pick a city —</option>'
-      + cities.map(c => `<option value="${c.zip}">${c.city}, ${c.state} (${c.zip})</option>`).join('');
+      + cities.map(c => `<option value="${c.city}">${c.city}, ${c.state}</option>`).join('');
     if (prev) sel.value = prev;
     // Render tags
     document.getElementById('city-tags').innerHTML = cities.map(c => `

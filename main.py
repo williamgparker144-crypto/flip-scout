@@ -149,7 +149,7 @@ def main():
     parser.add_argument("--hot-only",  action="store_true", help="Export only hot leads")
     parser.add_argument("--stats",     action="store_true", help="Show database stats and exit")
     parser.add_argument("--no-scrape", action="store_true", help="Skip scraping, just export current DB")
-    parser.add_argument("--city-zip",  type=str, default=None, help="Scout a single city by ZIP code")
+    parser.add_argument("--city",  type=str, default=None, help="Scout a single city by name (e.g. 'Fayetteville')")
     args = parser.parse_args()
 
     banner()
@@ -159,11 +159,11 @@ def main():
         return
 
     if not args.no_scrape:
-        if args.city_zip:
-            # Single-city mode — filter targets to the requested ZIP
-            match = [t for t in config.TARGET_CITIES if t["zip"] == args.city_zip]
+        if args.city:
+            # Single-city mode — match by city name (case-insensitive)
+            match = [t for t in config.TARGET_CITIES if t["city"].lower() == args.city.lower()]
             if not match:
-                console.print(f"[red]ZIP {args.city_zip} not in target cities list.[/red]")
+                console.print(f"[red]City '{args.city}' not in target cities list.[/red]")
                 return
             original = config.TARGET_CITIES
             config.TARGET_CITIES = match
