@@ -168,6 +168,50 @@
   .city     { color: var(--text-dim); }
   .source   { color: var(--muted); font-size: 11px; }
 
+  /* ── Map panel ── */
+  .map-panel {
+    display: none;
+    background: #060a10;
+    border: 1px solid var(--border);
+    border-top: none;
+  }
+  .map-panel.open { display: block; }
+  .map-panel-inner {
+    padding: 0;
+    position: relative;
+  }
+  .map-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #0d1520;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .map-toolbar .map-addr { color: var(--text); flex: 1; }
+  .map-btn {
+    background: #1a2a3a;
+    border: 1px solid var(--border);
+    color: var(--blue);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .map-btn.active { background: #1e4a6e; border-color: var(--blue); }
+  .map-btn-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    font-family: inherit;
+  }
+  #map-iframe { width: 100%; height: 420px; border: none; display: block; }
+
   .empty-state {
     text-align: center;
     color: var(--text-dim);
@@ -334,6 +378,20 @@
 
 </div>
 
+<!-- Map Panel -->
+<div id="map-panel" class="map-panel">
+  <div class="map-toolbar">
+    <div class="map-addr" id="map-addr">—</div>
+    <button class="map-btn active" id="btn-satellite" onclick="setMapMode('satellite')">🛰 Satellite</button>
+    <button class="map-btn" id="btn-street" onclick="setMapMode('street')">🚶 Street View</button>
+    <a id="map-external" href="#" target="_blank" class="map-btn" style="text-decoration:none;">↗ Open in Maps</a>
+    <button class="map-btn-close" onclick="closeMap()">×</button>
+  </div>
+  <div class="map-panel-inner">
+    <iframe id="map-iframe" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src=""></iframe>
+  </div>
+</div>
+
 <script>
   // ── Utilities ──────────────────────────────────────────────────────────
   const fmt$ = v => v ? '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits:0}) : '—';
@@ -375,7 +433,7 @@
     }
 
     tbody.innerHTML = rows.map((r, i) => `
-      <tr>
+      <tr style="cursor:pointer;" onclick="openMap('${escHtml((r.address||'').replace(/'/g,"\\'"))}','${(r.city||'').replace(/'/g,"\\'")}','${r.state||''}')" title="Click to view on map">
         <td style="color:var(--muted)">${i+1}</td>
         <td><span class="score-pill ${scoreClass(r.deal_score)}">${r.deal_score ?? 0}</span></td>
         <td class="discount">${fmtPct(r.discount_pct)}</td>
@@ -542,10 +600,65 @@
     });
   });
 
+  // ── Map panel ──────────────────────────────────────────────────────────
+  let _mapsKey = '';
+  let _currentAddress = '';
+  let _currentMode = 'satellite';
+
+  async function initMapsKey() {
+    const r = await fetch('/maps_key').then(x => x.json());
+    _mapsKey = r.key || '';
+  }
+
+  async function openMap(address, city, state) {
+    const full = `${address}, ${city}, ${state}`;
+    _currentAddress = full;
+
+    document.getElementById('map-addr').textContent = full;
+    document.getElementById('map-external').href =
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(full)}`;
+
+    const panel = document.getElementById('map-panel');
+    panel.classList.add('open');
+    panel.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    setMapMode(_currentMode);
+  }
+
+  async function setMapMode(mode) {
+    _currentMode = mode;
+    document.getElementById('btn-satellite').classList.toggle('active', mode === 'satellite');
+    document.getElementById('btn-street').classList.toggle('active', mode === 'street');
+
+    if (!_mapsKey) { await initMapsKey(); }
+    if (!_mapsKey) return;
+
+    const iframe = document.getElementById('map-iframe');
+    const enc = encodeURIComponent(_currentAddress);
+
+    if (mode === 'satellite') {
+      // Geocode first for precise pin
+      const geo = await fetch(`/geocode?address=${enc}`).then(x => x.json()).catch(() => null);
+      if (geo && geo.lat) {
+        iframe.src = `https://www.google.com/maps/embed/v1/view?key=${_mapsKey}&center=${geo.lat},${geo.lng}&zoom=18&maptype=satellite`;
+      } else {
+        iframe.src = `https://www.google.com/maps/embed/v1/place?key=${_mapsKey}&q=${enc}&maptype=satellite`;
+      }
+    } else {
+      iframe.src = `https://www.google.com/maps/embed/v1/streetview?key=${_mapsKey}&location=${enc}&fov=90`;
+    }
+  }
+
+  function closeMap() {
+    document.getElementById('map-panel').classList.remove('open');
+    document.getElementById('map-iframe').src = '';
+  }
+
   // ── Init ───────────────────────────────────────────────────────────────
   loadStats();
   loadLeads();
   loadCities();
+  initMapsKey();
 </script>
 </body>
 </html>

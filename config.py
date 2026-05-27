@@ -19,9 +19,11 @@ DB_PATH = DATA_DIR / "flip_leads.db"
 # ============================================================
 # API KEYS (loaded from .env file)
 # ============================================================
-RENTCAST_API_KEY     = os.getenv("RENTCAST_API_KEY", "")
-RAPIDAPI_KEY         = os.getenv("RAPIDAPI_KEY", "")
-DISCORD_WEBHOOK_URL  = os.getenv("DISCORD_WEBHOOK_URL", "")
+RENTCAST_API_KEY      = os.getenv("RENTCAST_API_KEY", "")
+RAPIDAPI_KEY          = os.getenv("RAPIDAPI_KEY", "")
+DISCORD_WEBHOOK_URL   = os.getenv("DISCORD_WEBHOOK_URL", "")
+GOOGLE_GEOCODING_KEY  = os.getenv("GOOGLE_GEOCODING_KEY", "")
+GOOGLE_MAPS_EMBED_KEY = os.getenv("GOOGLE_MAPS_EMBED_KEY", "")
 
 # ============================================================
 # SEARCH TARGETS

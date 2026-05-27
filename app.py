@@ -140,6 +140,33 @@ def leads():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/geocode")
+def geocode():
+    address = request.args.get("address", "")
+    if not address:
+        return jsonify({"error": "no address"}), 400
+    import config as _cfg
+    if not _cfg.GOOGLE_GEOCODING_KEY:
+        return jsonify({"error": "no geocoding key"}), 500
+    try:
+        r = __import__("requests").get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={"address": address, "key": _cfg.GOOGLE_GEOCODING_KEY},
+            timeout=10,
+        ).json()
+        if r.get("results"):
+            loc = r["results"][0]["geometry"]["location"]
+            return jsonify({"lat": loc["lat"], "lng": loc["lng"],
+                            "formatted": r["results"][0]["formatted_address"]})
+        return jsonify({"error": "not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/maps_key")
+def maps_key():
+    import config as _cfg
+    return jsonify({"key": _cfg.GOOGLE_MAPS_EMBED_KEY})
+
 @app.route("/cities", methods=["GET"])
 def get_cities():
     return jsonify(_read_cities())
