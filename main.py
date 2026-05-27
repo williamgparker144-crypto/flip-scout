@@ -144,6 +144,54 @@ def print_stats():
         console.print(f"    {src:25s} {count}")
 
 
+def _send_discord_alerts():
+    """Send Discord embeds for hot leads not yet alerted."""
+    try:
+        import notifier_discord
+        import sqlite3 as _sql
+        if not config.DISCORD_WEBHOOK_URL:
+            return
+
+        db_path = config.DB_PATH
+        conn = _sql.connect(str(db_path))
+        conn.row_factory = _sql.Row
+
+        # alerted flag column — add if missing
+        try:
+            conn.execute("ALTER TABLE leads ADD COLUMN discord_alerted INTEGER DEFAULT 0")
+            conn.commit()
+        except Exception:
+            pass
+
+        new_hot = conn.execute("""
+            SELECT * FROM leads
+            WHERE is_hot = 1 AND (discord_alerted IS NULL OR discord_alerted = 0)
+            ORDER BY deal_score DESC
+        """).fetchall()
+
+        if not new_hot:
+            console.print("  [dim]Discord: no new hot leads to send[/dim]")
+            conn.close()
+            return
+
+        leads = [dict(r) for r in new_hot]
+        console.print(f"\n[bold cyan]Discord:[/bold cyan] sending {len(leads)} new hot lead(s)...")
+        sent = notifier_discord.broadcast_new_hot_leads(leads)
+
+        # Mark as alerted
+        fps = [r["fingerprint"] for r in new_hot[:sent]]
+        if fps:
+            conn.execute(
+                f"UPDATE leads SET discord_alerted = 1 WHERE fingerprint IN ({','.join('?'*len(fps))})",
+                fps
+            )
+            conn.commit()
+        conn.close()
+        console.print(f"  [green]✓ {sent} alert(s) sent to Discord[/green]")
+    except Exception as e:
+        console.print(f"  [yellow]Discord alerts skipped: {e}[/yellow]")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Flip Scraper — distressed property lead engine")
     parser.add_argument("--hot-only",  action="store_true", help="Export only hot leads")
@@ -176,6 +224,7 @@ def main():
     print_top_table(15)
     export_results(hot_only=args.hot_only)
     print_stats()
+    _send_discord_alerts()
 
 
 if __name__ == "__main__":
