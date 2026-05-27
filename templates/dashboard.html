@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flip Scout — TechSpatch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0f1a;
+    --surface:   #111827;
+    --border:    #1e2d40;
+    --green:     #48bb78;
+    --green-dim: #276749;
+    --red:       #fc8181;
+    --yellow:    #f6e05e;
+    --blue:      #63b3ed;
+    --muted:     #4a5568;
+    --text:      #e2e8f0;
+    --text-dim:  #718096;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { font-size: 18px; font-weight: 700; color: var(--green); letter-spacing: 2px; }
+  .logo span { color: var(--text-dim); font-weight: 300; }
+  .tagline { color: var(--text-dim); font-size: 11px; }
+
+  /* ── Layout ── */
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .stat-label { color: var(--text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--green); }
+  .stat-sub   { color: var(--text-dim); font-size: 10px; margin-top: 4px; }
+
+  /* ── Scout panel ── */
+  .scout-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+  #btn-scout {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 14px 36px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    min-width: 160px;
+  }
+  #btn-scout:hover  { background: #68d391; }
+  #btn-scout:disabled { background: var(--muted); color: var(--text-dim); cursor: not-allowed; }
+
+  .scout-info { flex: 1; }
+  .scout-status { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+  .scout-status.running { color: var(--yellow); }
+  .scout-status.done    { color: var(--green); }
+  .scout-status.error   { color: var(--red); }
+  .scout-meta { font-size: 11px; color: var(--muted); }
+
+  /* ── Log ── */
+  #log-panel {
+    display: none;
+    background: #060a10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  #log-panel.visible { display: block; }
+  #log-output { font-size: 11px; line-height: 1.6; color: #a0aec0; white-space: pre-wrap; }
+  .log-line-error  { color: var(--red); }
+  .log-line-ok     { color: var(--green); }
+  .log-line-warn   { color: var(--yellow); }
+
+  /* ── Leads table ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 1px; }
+  .badge { background: var(--green-dim); color: var(--green); font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid #0d1520;
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: #0f1d2e; }
+  tbody td { padding: 10px 12px; vertical-align: middle; white-space: nowrap; }
+
+  .score-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .score-fire { background: #7b2e00; color: #ff6b35; }
+  .score-hot  { background: #5c3600; color: #f6ad55; }
+  .score-warm { background: #3d4000; color: #f6e05e; }
+
+  .fund-yes { color: var(--green); font-weight: 700; }
+  .fund-no  { color: var(--muted); }
+
+  .price    { color: var(--text); }
+  .discount { color: var(--yellow); font-weight: 600; }
+  .mao      { color: var(--blue); }
+  .address  { color: var(--text); max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  .city     { color: var(--text-dim); }
+  .source   { color: var(--muted); font-size: 11px; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 48px;
+    font-size: 13px;
+  }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--yellow);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">FLIP SCOUT <span>/ TechSpatch</span></div>
+    <div class="tagline">Distressed Property Lead Engine — Manual Mode</div>
+  </div>
+  <div style="color:var(--text-dim);font-size:11px;text-align:right;">
+    <div id="hdr-time"></div>
+    <div style="margin-top:4px;">No auto-runs. You control the scouts.</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Total Leads</div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-sub">in database</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Hot Leads</div>
+      <div class="stat-value" id="stat-hot" style="color:var(--red);">—</div>
+      <div class="stat-sub">score ≥ 60 or discount ≥ 30%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ZIPs Cached</div>
+      <div class="stat-value" id="stat-zips" style="color:var(--blue);">—</div>
+      <div class="stat-sub">60-day market cache</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last Scout</div>
+      <div class="stat-value" id="stat-last" style="font-size:14px;padding-top:6px;">—</div>
+      <div class="stat-sub">&nbsp;</div>
+    </div>
+  </div>
+
+  <!-- Scout Panel -->
+  <div class="scout-panel">
+    <button id="btn-scout" onclick="startScout()">▶ SCOUT NOW</button>
+    <div class="scout-info">
+      <div class="scout-status" id="scout-status">Ready — press Scout Now to pull fresh leads.</div>
+      <div class="scout-meta" id="scout-meta">RentCast cached ZIPs will be used first. New ZIPs cost 1 API call each.</div>
+    </div>
+    <button onclick="toggleLog()" style="background:none;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;">
+      Toggle Log
+    </button>
+  </div>
+
+  <!-- Log -->
+  <div id="log-panel">
+    <div id="log-output"></div>
+  </div>
+
+  <!-- Leads Table -->
+  <div class="section-header">
+    <div class="section-title">Hot Leads</div>
+    <div class="badge" id="leads-count">loading...</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Score</th>
+          <th>Disc%</th>
+          <th>Fundable</th>
+          <th>Address</th>
+          <th>City</th>
+          <th>List Price</th>
+          <th>Market Val</th>
+          <th>MAO</th>
+          <th>Repair Est</th>
+          <th>Bed/Ba/Sqft</th>
+          <th>Yr Built</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody id="leads-tbody">
+        <tr><td colspan="13" class="empty-state">Loading leads...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  // ── Utilities ──────────────────────────────────────────────────────────
+  const fmt$ = v => v ? '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits:0}) : '—';
+  const fmtPct = v => v ? Number(v).toFixed(1) + '%' : '—';
+
+  function scoreClass(s) {
+    if (s >= 75) return 'score-fire';
+    if (s >= 60) return 'score-hot';
+    return 'score-warm';
+  }
+
+  function updateClock() {
+    document.getElementById('hdr-time').textContent = new Date().toLocaleString();
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Stats ──────────────────────────────────────────────────────────────
+  async function loadStats() {
+    const r = await fetch('/stats').then(x => x.json());
+    document.getElementById('stat-total').textContent = r.total ?? '—';
+    document.getElementById('stat-hot').textContent   = r.hot ?? '—';
+    document.getElementById('stat-zips').textContent  = r.cached_zips ?? '—';
+    if (r.last_seen) {
+      const d = new Date(r.last_seen);
+      document.getElementById('stat-last').textContent = d.toLocaleDateString();
+    }
+  }
+
+  // ── Leads table ────────────────────────────────────────────────────────
+  async function loadLeads() {
+    const rows = await fetch('/leads').then(x => x.json());
+    const tbody = document.getElementById('leads-tbody');
+    document.getElementById('leads-count').textContent = rows.length + ' leads';
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="13" class="empty-state">No hot leads yet — run a scout to find deals.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:var(--muted)">${i+1}</td>
+        <td><span class="score-pill ${scoreClass(r.deal_score)}">${r.deal_score ?? 0}</span></td>
+        <td class="discount">${fmtPct(r.discount_pct)}</td>
+        <td>${r.fully_fundable ? '<span class="fund-yes">✓ YES</span>' : '<span class="fund-no">—</span>'}</td>
+        <td class="address" title="${r.address ?? ''}">${(r.address ?? '').slice(0, 35)}${(r.address ?? '').length > 35 ? '…' : ''}</td>
+        <td class="city">${r.city ?? ''}, ${r.state ?? ''}</td>
+        <td class="price">${fmt$(r.list_price)}</td>
+        <td class="price">${fmt$(r.est_market_val)}</td>
+        <td class="mao">${fmt$(r.mao)}</td>
+        <td style="color:var(--text-dim)">${fmt$(r.repair_estimate)}</td>
+        <td style="color:var(--text-dim)">${r.beds ?? '?'}bd / ${r.baths ?? '?'}ba / ${r.sqft ? Number(r.sqft).toLocaleString() : '?'}sf</td>
+        <td style="color:var(--text-dim)">${r.year_built ?? '—'}</td>
+        <td class="source">${r.source ?? ''}</td>
+      </tr>
+    `).join('');
+  }
+
+  // ── Scout ──────────────────────────────────────────────────────────────
+  let polling = null;
+
+  async function startScout() {
+    const btn = document.getElementById('btn-scout');
+    btn.disabled = true;
+    document.getElementById('scout-status').className = 'scout-status running';
+    document.getElementById('scout-status').innerHTML = '<span class="spinner"></span>Scouting...';
+    document.getElementById('log-panel').classList.add('visible');
+    document.getElementById('log-output').textContent = '';
+
+    const r = await fetch('/scout', {method:'POST'}).then(x => x.json());
+    if (!r.ok) {
+      document.getElementById('scout-status').textContent = r.msg;
+      btn.disabled = false;
+      return;
+    }
+    polling = setInterval(pollStatus, 1200);
+  }
+
+  async function pollStatus() {
+    const s = await fetch('/status').then(x => x.json());
+
+    // Update log
+    const logEl = document.getElementById('log-output');
+    logEl.innerHTML = s.log.map(line => {
+      let cls = '';
+      if (line.includes('Error') || line.includes('failed') || line.includes('FAILED')) cls = 'log-line-error';
+      else if (line.includes('✓') || line.includes('loaded') || line.includes('listings from')) cls = 'log-line-ok';
+      else if (line.includes('Disabled') || line.includes('skipping')) cls = 'log-line-warn';
+      return `<div class="${cls}">${escHtml(line)}</div>`;
+    }).join('');
+    logEl.scrollTop = logEl.scrollHeight;
+
+    if (!s.running) {
+      clearInterval(polling);
+      polling = null;
+      const btn = document.getElementById('btn-scout');
+      btn.disabled = false;
+
+      const statusEl = document.getElementById('scout-status');
+      if (s.exit_code === 0) {
+        statusEl.className = 'scout-status done';
+        statusEl.textContent = `✓ Scout complete — finished ${s.finished}`;
+      } else {
+        statusEl.className = 'scout-status error';
+        statusEl.textContent = `✗ Scout ended with errors — check log`;
+      }
+      document.getElementById('scout-meta').textContent = `Started ${s.started}  •  Finished ${s.finished}`;
+      await loadStats();
+      await loadLeads();
+    }
+  }
+
+  function toggleLog() {
+    document.getElementById('log-panel').classList.toggle('visible');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────
+  loadStats();
+  loadLeads();
+</script>
+</body>
+</html>
