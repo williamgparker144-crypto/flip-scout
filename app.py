@@ -127,6 +127,7 @@ def leads():
                    address, city, state, zip_code,
                    list_price, est_market_val, mao,
                    repair_estimate, arv_estimate,
+                   max_loan_amount, cash_to_close,
                    beds, baths, sqft, year_built,
                    source, source_url, last_seen
             FROM leads

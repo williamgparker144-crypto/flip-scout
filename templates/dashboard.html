@@ -212,6 +212,151 @@
   }
   #map-iframe { width: 100%; height: 420px; border: none; display: block; }
 
+  /* ── Lead cards ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+  .lead-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .lead-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+  .card-header {
+    padding: 14px 16px 10px;
+    border-left: 4px solid var(--green);
+    background: #0d1a2a;
+  }
+  .card-header.fire  { border-color: #ff6b35; }
+  .card-header.hot   { border-color: #f6ad55; }
+  .card-header.warm  { border-color: #f6e05e; }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-sub { font-size: 11px; color: var(--text-dim); }
+  .card-body { padding: 12px 16px; }
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px 8px;
+  }
+  .card-field-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .card-field-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .card-field-value.green  { color: var(--green); }
+  .card-field-value.yellow { color: var(--yellow); }
+  .card-field-value.blue   { color: var(--blue); }
+  .card-field-value.red    { color: var(--red); }
+  .card-footer {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .card-verdict {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .verdict-yes { color: var(--green); }
+  .verdict-no  { color: var(--red); }
+
+  /* ── Detail modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 90%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    padding: 20px 24px 14px;
+    border-left: 5px solid var(--green);
+    background: #0d1a2a;
+    border-radius: 10px 10px 0 0;
+    position: relative;
+  }
+  .modal-header.fire { border-color: #ff6b35; }
+  .modal-header.hot  { border-color: #f6ad55; }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none; border: none;
+    color: var(--muted); font-size: 20px;
+    cursor: pointer; font-family: inherit;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .modal-source { font-size: 11px; color: var(--text-dim); }
+  .modal-body { padding: 20px 24px; }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .modal-field-label {
+    font-size: 10px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .modal-field-value { font-size: 14px; font-weight: 700; color: var(--text); }
+  .modal-field-value.green  { color: var(--green); }
+  .modal-field-value.yellow { color: var(--yellow); }
+  .modal-field-value.blue   { color: var(--blue); }
+  .modal-field-value.red    { color: var(--red); }
+  .modal-verdict {
+    padding: 12px 16px;
+    background: #060a10;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .modal-actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .modal-btn {
+    padding: 8px 16px; border-radius: 5px;
+    font-family: inherit; font-size: 12px;
+    cursor: pointer; font-weight: 600;
+    text-decoration: none; display: inline-block;
+  }
+
   .empty-state {
     text-align: center;
     color: var(--text-dim);
@@ -346,36 +491,37 @@
     </div>
   </div>
 
-  <!-- Leads Table -->
+  <!-- Leads Cards -->
   <div class="section-header">
     <div class="section-title">Hot Leads</div>
     <div class="badge" id="leads-count">loading...</div>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Score</th>
-          <th>Disc%</th>
-          <th>Fundable</th>
-          <th>Address</th>
-          <th>City</th>
-          <th>List Price</th>
-          <th>Market Val</th>
-          <th>MAO</th>
-          <th>Repair Est</th>
-          <th>Bed/Ba/Sqft</th>
-          <th>Yr Built</th>
-          <th>Source</th>
-        </tr>
-      </thead>
-      <tbody id="leads-tbody">
-        <tr><td colspan="13" class="empty-state">Loading leads...</td></tr>
-      </tbody>
-    </table>
+  <div class="cards-grid" id="leads-grid">
+    <div class="empty-state">Loading leads...</div>
   </div>
 
+</div>
+
+<!-- Lead Detail Modal -->
+<div class="modal-overlay" id="lead-modal" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header" id="modal-header">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-title" id="modal-title">—</div>
+      <div class="modal-source" id="modal-source">—</div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid" id="modal-grid"></div>
+      <div class="modal-verdict" id="modal-verdict"></div>
+      <div class="modal-actions">
+        <button class="modal-btn" id="modal-map-btn"
+          style="background:var(--green-dim);color:var(--green);border:1px solid var(--green-dim);">
+          📍 View on Map
+        </button>
+        <span id="modal-listing-link"></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Map Panel -->
@@ -421,34 +567,123 @@
     }
   }
 
-  // ── Leads table ────────────────────────────────────────────────────────
+  // ── Leads cards ────────────────────────────────────────────────────────
+  let _leads = [];
+
   async function loadLeads() {
     const rows = await fetch('/leads').then(x => x.json());
-    const tbody = document.getElementById('leads-tbody');
-    document.getElementById('leads-count').textContent = rows.length + ' leads';
+    _leads = Array.isArray(rows) ? rows : [];
+    const grid = document.getElementById('leads-grid');
+    document.getElementById('leads-count').textContent = _leads.length + ' leads';
 
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="13" class="empty-state">No hot leads yet — run a scout to find deals.</td></tr>';
+    if (!_leads.length) {
+      grid.innerHTML = '<div class="empty-state">No hot leads yet — run a scout to find deals.</div>';
       return;
     }
 
-    tbody.innerHTML = rows.map((r, i) => `
-      <tr style="cursor:pointer;" onclick="openMap('${escHtml((r.address||'').replace(/'/g,"\\'"))}','${(r.city||'').replace(/'/g,"\\'")}','${r.state||''}')" title="Click to view on map">
-        <td style="color:var(--muted)">${i+1}</td>
-        <td><span class="score-pill ${scoreClass(r.deal_score)}">${r.deal_score ?? 0}</span></td>
-        <td class="discount">${fmtPct(r.discount_pct)}</td>
-        <td>${r.fully_fundable ? '<span class="fund-yes">✓ YES</span>' : '<span class="fund-no">—</span>'}</td>
-        <td class="address" title="${r.address ?? ''}">${(r.address ?? '').slice(0, 35)}${(r.address ?? '').length > 35 ? '…' : ''}</td>
-        <td class="city">${r.city ?? ''}, ${r.state ?? ''}</td>
-        <td class="price">${fmt$(r.list_price)}</td>
-        <td class="price">${fmt$(r.est_market_val)}</td>
-        <td class="mao">${fmt$(r.mao)}</td>
-        <td style="color:var(--text-dim)">${fmt$(r.repair_estimate)}</td>
-        <td style="color:var(--text-dim)">${r.beds ?? '?'}bd / ${r.baths ?? '?'}ba / ${r.sqft ? Number(r.sqft).toLocaleString() : '?'}sf</td>
-        <td style="color:var(--text-dim)">${r.year_built ?? '—'}</td>
-        <td class="source">${r.source ?? ''}</td>
-      </tr>
-    `).join('');
+    grid.innerHTML = _leads.map((r, i) => {
+      const sc    = r.deal_score ?? 0;
+      const tier  = sc >= 75 ? 'fire' : sc >= 60 ? 'hot' : 'warm';
+      const emoji = sc >= 75 ? '🔥' : sc >= 60 ? '♨️' : '📍';
+      const scoreColor = tier === 'fire' ? 'red' : tier === 'hot' ? 'yellow' : '';
+      const fundHtml = r.fully_fundable
+        ? '<span class="card-field-value green">✓ YES</span>'
+        : '<span class="card-field-value" style="color:var(--muted)">—</span>';
+      const verdict = r.fully_fundable
+        ? '<div class="card-verdict verdict-yes">✅ LENDER LIKELY — At or below 70% ARV</div>'
+        : '<div class="card-verdict verdict-no">❌ CASH DEAL — May exceed lender threshold</div>';
+      return `
+        <div class="lead-card" onclick="openModal(${i})">
+          <div class="card-header ${tier}">
+            <div class="card-title">${emoji} ${escHtml((r.address||'').slice(0,42))}</div>
+            <div class="card-sub">${escHtml(r.city||'')}, ${r.state||''} — ${escHtml(r.source||'')}</div>
+          </div>
+          <div class="card-body">
+            <div class="card-grid">
+              <div><div class="card-field-label">Deal Score</div><div class="card-field-value ${scoreColor}">${sc}</div></div>
+              <div><div class="card-field-label">Discount</div><div class="card-field-value yellow">${fmtPct(r.discount_pct)}</div></div>
+              <div><div class="card-field-label">Fundable</div>${fundHtml}</div>
+
+              <div><div class="card-field-label">List Price</div><div class="card-field-value">${fmt$(r.list_price)}</div></div>
+              <div><div class="card-field-label">Market Val</div><div class="card-field-value">${fmt$(r.est_market_val)}</div></div>
+              <div><div class="card-field-label">ARV Est</div><div class="card-field-value">${fmt$(r.arv_estimate)}</div></div>
+
+              <div><div class="card-field-label">Loan @70%</div><div class="card-field-value blue">${fmt$(r.max_loan_amount)}</div></div>
+              <div><div class="card-field-label">Cash to Close</div><div class="card-field-value">${fmt$(r.cash_to_close)}</div></div>
+              <div><div class="card-field-label">Repair Est</div><div class="card-field-value">${fmt$(r.repair_estimate)}</div></div>
+
+              <div><div class="card-field-label">MAO</div><div class="card-field-value blue">${fmt$(r.mao)}</div></div>
+              <div><div class="card-field-label">Beds/Ba/Sqft</div><div class="card-field-value">${r.beds??'?'}/${r.baths??'?'}/${r.sqft?Number(r.sqft).toLocaleString():'?'}</div></div>
+              <div><div class="card-field-label">Year Built</div><div class="card-field-value">${r.year_built??'—'}</div></div>
+            </div>
+          </div>
+          ${verdict}
+          <div class="card-footer">
+            <span>${escHtml(r.source||'')} • ${r.last_seen ? new Date(r.last_seen).toLocaleDateString() : '—'}</span>
+            <button data-addr="${escHtml(r.address||'')}" data-city="${escHtml(r.city||'')}" data-state="${r.state||''}"
+              onclick="event.stopPropagation();openMapFromCard(this)"
+              style="background:none;border:1px solid var(--border);color:var(--blue);padding:3px 10px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:10px;">
+              📍 Map
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function openMapFromCard(btn) {
+    openMap(btn.dataset.addr, btn.dataset.city, btn.dataset.state);
+  }
+
+  // ── Lead detail modal ──────────────────────────────────────────────────
+  function openModal(idx) {
+    const r = _leads[idx];
+    if (!r) return;
+    const sc    = r.deal_score ?? 0;
+    const tier  = sc >= 75 ? 'fire' : sc >= 60 ? 'hot' : 'warm';
+    const emoji = sc >= 75 ? '🔥' : sc >= 60 ? '♨️' : '📍';
+
+    document.getElementById('modal-title').textContent  = `${emoji} ${r.address || '—'}`;
+    document.getElementById('modal-source').textContent = `${r.city||''}, ${r.state||''} — ${r.source||''}`;
+    document.getElementById('modal-header').className   = `modal-header ${tier}`;
+
+    const fields = [
+      {label:'Deal Score',    val: sc,                                                               cls: tier==='fire'?'red':'yellow'},
+      {label:'Discount',      val: fmtPct(r.discount_pct),                                          cls: 'yellow'},
+      {label:'Fundable',      val: r.fully_fundable ? '✓ YES' : '—',                               cls: r.fully_fundable ? 'green' : ''},
+      {label:'List Price',    val: fmt$(r.list_price),                                              cls: ''},
+      {label:'Market Val',    val: fmt$(r.est_market_val),                                         cls: ''},
+      {label:'ARV Est',       val: fmt$(r.arv_estimate),                                           cls: ''},
+      {label:'Loan @70%',     val: fmt$(r.max_loan_amount),                                        cls: 'blue'},
+      {label:'Cash to Close', val: fmt$(r.cash_to_close),                                          cls: ''},
+      {label:'Repair Est',    val: fmt$(r.repair_estimate),                                        cls: ''},
+      {label:'MAO',           val: fmt$(r.mao),                                                    cls: 'blue'},
+      {label:'Beds/Ba/Sqft',  val: `${r.beds??'?'}/${r.baths??'?'}/${r.sqft?Number(r.sqft).toLocaleString():'?'}`, cls: ''},
+      {label:'Year Built',    val: r.year_built ?? '—',                                            cls: ''},
+    ];
+
+    document.getElementById('modal-grid').innerHTML = fields.map(f => `
+      <div>
+        <div class="modal-field-label">${f.label}</div>
+        <div class="modal-field-value ${f.cls}">${f.val}</div>
+      </div>`).join('');
+
+    document.getElementById('modal-verdict').innerHTML = r.fully_fundable
+      ? '<span class="verdict-yes">✅ LENDER LIKELY — Deal is at or below 70% of ARV. Conventional financing possible.</span>'
+      : '<span class="verdict-no">❌ CASH DEAL — May exceed lender threshold. Consider cash or hard money.</span>';
+
+    document.getElementById('modal-map-btn').onclick =
+      () => { closeModal(); openMap(r.address||'', r.city||'', r.state||''); };
+
+    document.getElementById('modal-listing-link').innerHTML = r.source_url
+      ? `<a class="modal-btn" href="${escHtml(r.source_url)}" target="_blank"
+           style="background:#1a2a3a;color:var(--blue);border:1px solid var(--border);">↗ Open Listing</a>`
+      : '';
+
+    document.getElementById('lead-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('lead-modal').classList.remove('open');
   }
 
   // ── Scout ──────────────────────────────────────────────────────────────
